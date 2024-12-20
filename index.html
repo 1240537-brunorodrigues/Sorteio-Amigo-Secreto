@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <title>Amigo Secreto</title>
+  <style>
+    /* CSS Simples para o Layout */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      width: 80%;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 5px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    li {
+      background-color: #e7e7e7;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .code {
+      font-weight: bold;
+      color: #0066cc;
+      margin-left: 10px;
+    }
+
+    .alert {
+      color: red;
+    }
+
+    .copy-btn {
+      background-color: #008CBA;
+      padding: 5px 10px;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background-color: #007B9E;
+    }
+
+    .new-draw-btn {
+      background-color: #f44336; /* Vermelho */
+    }
+
+    .new-draw-btn:hover {
+      background-color: #da190b;
+    }
+
+    .reset-btn {
+      background-color: #555555; /* Cinza */
+    }
+
+    .reset-btn:hover {
+      background-color: #333333;
+    }
+
+    /* Estilos para o Modal */
+    .modal {
+      display: none; /* Oculto por padrão */
+      position: fixed; /* Fica fixo na tela */
+      z-index: 1; /* Fica acima de outros elementos */
+      left: 0;
+      top: 0;
+      width: 100%; /* Largura total */
+      height: 100%; /* Altura total */
+      overflow: auto; /* Scroll se necessário */
+      background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto; /* 15% do topo e centralizado */
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 400px; /* Largura máxima */
+      border-radius: 8px;
+      position: relative;
+      animation: fadeIn 0.5s;
+    }
+
+    /* Animação para o Modal */
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+
+    /* Botão de Fechar */
+    .close-btn {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+    }
+
+    .close-btn:hover,
+    .close-btn:focus {
+      color: black;
+      text-decoration: none;
+    }
+
+    .modal-message {
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Organizador de Amigo Secreto</h1>
+<div class="container">
+  <!-- Secção para Adicionar Participantes -->
+  <div id="add-participant-section">
+    <h2>Adicionar Participante</h2>
+    <label for="participant-name"></label><input type="text" id="participant-name" placeholder="Nome do Participante">
+    <br>
+    <button onclick="addParticipant()">Adicionar</button>
+    <h3>Participantes Adicionados:</h3>
+    <ul id="participant-list"></ul>
+  </div>
+
+  <!-- Secção para Realizar o Sorteio -->
+  <div id="draw-section" class="hidden">
+    <h2>Realizar Sorteio</h2>
+    <button onclick="performDraw()">Sortear Amigos</button>
+    <button class="new-draw-btn" onclick="newDraw()">Novo Sorteio</button>
+    <button class="reset-btn" onclick="resetAll()">Resetar Tudo</button>
+    <p class="alert" id="draw-alert"></p>
+  </div>
+
+  <!-- Secção para Revelar o Amigo Secreto -->
+  <div id="reveal-section">
+    <h2>Revelar Amigo Secreto</h2>
+    <label for="reveal-code"></label><input type="text" id="reveal-code" placeholder="Insira seu código único">
+    <br>
+    <button onclick="revealFriend()">Revelar</button>
+  </div>
+</div>
+
+<!-- Modal para Exibir o Amigo Secreto -->
+<div id="secretModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <p class="modal-message" id="modal-message"></p>
+  </div>
+</div>
+
+<script>
+  // Função para gerar códigos únicos
+  function generateCode() {
+    return 'xxxx-4xxx-yxxx-xxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  // Carregar participantes do localStorage ou inicializar array
+  let participants = JSON.parse(localStorage.getItem('participants')) || [];
+
+  // Função para exibir a lista de participantes com códigos
+  function displayParticipants() {
+    const list = document.getElementById('participant-list');
+    list.innerHTML = '';
+    participants.forEach(p => {
+      list.innerHTML += `
+                    <li>
+                        <span>${p.name}</span>
+                        <span>
+                            Código: <span class="code">${p.code}</span>
+                            <button class="copy-btn" onclick="copyCode('${p.code}')">Copiar</button>
+                        </span>
+                    </li>
+                `;
+    });
+
+    // Mostrar ou esconder a secção de sorteio
+    const drawSection = document.getElementById('draw-section');
+    if (participants.length >= 2) {
+      drawSection.classList.remove('hidden');
+    } else {
+      drawSection.classList.add('hidden');
+    }
+  }
+
+  // Inicialmente exibir participantes
+  displayParticipants();
+
+  // Função para adicionar um participante
+  function addParticipant() {
+    const nameInput = document.getElementById('participant-name');
+    const name = nameInput.value.trim();
+    if (name === '') {
+      alert('Por favor, insira um nome válido.');
+      return;
+    }
+
+    // Verificar se o participante já existe
+    if (participants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+      alert('Este participante já foi adicionado.');
+      return;
+    }
+
+    const code = generateCode();
+    participants.push({ name, code, assigned: null });
+    localStorage.setItem('participants', JSON.stringify(participants));
+    nameInput.value = '';
+    displayParticipants();
+  }
+
+  // Função para realizar o sorteio
+  function performDraw() {
+    // Resetar alert
+    const alertElem = document.getElementById('draw-alert');
+    alertElem.textContent = '';
+
+    // Verificar se o sorteio já foi realizado
+    if (participants.some(p => p.assigned !== null)) {
+      alertElem.textContent = 'O sorteio já foi realizado.';
+      return;
+    }
+
+    // Copiar e embaralhar os participantes
+    let shuffled = [...participants];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Garantir que ninguém tire a si mesmo
+    let valid = true;
+    for (let i = 0; i < participants.length; i++) {
+      if (participants[i].name === shuffled[i].name) {
+        valid = false;
+        break;
+      }
+    }
+
+    // Tentar até obter um sorteio válido
+    let attempts = 0;
+    const maxAttempts = 1000;
+    while (!valid && attempts < maxAttempts) {
+      shuffled = [...participants];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      valid = true;
+      for (let i = 0; i < participants.length; i++) {
+        if (participants[i].name === shuffled[i].name) {
+          valid = false;
+          break;
+        }
+      }
+      attempts++;
+    }
+
+    if (!valid) {
+      alertElem.textContent = 'Erro ao realizar o sorteio. Tente novamente.';
+      return;
+    }
+
+    // Atribuir os amigos secretos
+    for (let i = 0; i < participants.length; i++) {
+      participants[i].assigned = shuffled[i].code;
+    }
+
+    localStorage.setItem('participants', JSON.stringify(participants));
+
+    alert('Sorteio realizado com sucesso! Distribua os códigos únicos para cada participante de forma privada.');
+    displayParticipants();
+  }
+
+  // Função para revelar o amigo secreto
+  function revealFriend() {
+    const codeInput = document.getElementById('reveal-code');
+    const code = codeInput.value.trim();
+    document.getElementById('reveal-result');
+    if (code === '') {
+      alert('Por favor, insira um código válido.');
+      return;
+    }
+
+    // Encontrar o participante pelo código
+    const participant = participants.find(p => p.code === code);
+    if (!participant) {
+      alert('Código não encontrado.');
+      return;
+    }
+
+    // Verificar se o sorteio foi realizado
+    if (participants.some(p => p.assigned === null)) {
+      alert('O sorteio ainda não foi realizado.');
+      return;
+    }
+
+    // Encontrar o amigo secreto
+    const assignedParticipant = participants.find(p => p.code === participant.assigned);
+    if (!assignedParticipant) {
+      alert('Erro ao encontrar o amigo secreto.');
+      return;
+    }
+
+    // Exibir o resultado no modal
+    showModal(`Olá, <strong>${participant.name}</strong>!<br>Seu amigo secreto é: <strong>${assignedParticipant.name}</strong>`);
+    codeInput.value = '';
+  }
+
+  // Função para copiar o código para a área de transferência
+  function copyCode(code) {
+    navigator.clipboard.writeText(code).then(() => {
+      alert('Código copiado para a área de transferência!');
+    }).catch(err => {
+      alert('Erro ao copiar o código.');
+      console.error('Erro ao copiar o código: ', err);
+    });
+  }
+
+  // Função para realizar um novo sorteio (reseta atribuições)
+  function newDraw() {
+    const confirmation = confirm('Tem certeza que deseja realizar um novo sorteio? Isso irá resetar as atribuições atuais.');
+    if (!confirmation) {
+      return;
+    }
+
+    // Resetar as atribuições
+    participants.forEach(p => {
+      p.assigned = null;
+    });
+
+    localStorage.setItem('participants', JSON.stringify(participants));
+
+    alert('As atribuições foram resetadas. Você pode realizar um novo sorteio agora.');
+    displayParticipants();
+  }
+
+  // Função para resetar todos os dados (limpar participantes)
+  function resetAll() {
+    const confirmation = confirm('Tem certeza que deseja resetar todos os dados? Isso irá remover todos os participantes e códigos.');
+    if (!confirmation) {
+      return;
+    }
+
+    // Limpar a lista de participantes
+    participants = [];
+    localStorage.setItem('participants', JSON.stringify(participants));
+
+    alert('Todos os dados foram resetados. Você pode começar a adicionar novos participantes.');
+    displayParticipants();
+  }
+
+  // Função para exibir o modal com a mensagem
+  function showModal(message) {
+    const modal = document.getElementById('secretModal');
+    const modalMessage = document.getElementById('modal-message');
+    modalMessage.innerHTML = message;
+    modal.style.display = 'block';
+
+    // Fechar o modal automaticamente após 5 segundos
+    setTimeout(closeModal, 5000);
+  }
+
+  // Função para fechar o modal
+  function closeModal() {
+    const modal = document.getElementById('secretModal');
+    modal.style.display = 'none';
+  }
+
+  // Fechar o modal quando clicar fora do conteúdo
+  window.onclick = function(event) {
+    const modal = document.getElementById('secretModal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  }
+</script>
+
+</body>
+</html>
